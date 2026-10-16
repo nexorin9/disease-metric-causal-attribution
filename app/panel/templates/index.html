@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>单病种指标因果归因系统</title>
+
+  <!-- 设计 token 集中变量：颜色 / 间距 / 字号 / 圆角 -->
+  <link rel="stylesheet" href="/static/panel.css" />
+
+  <!--
+    Plotly.js 2.x 因果图渲染。
+    本地 static/plotly.min.js 是 API-compatible 本地兜底（浏览器面板离线也能渲染基础 trace）。
+    生产部署可把 src 替换为受机构内部网络信任的 CDN，但 spec §11 要求"凭据与脚本本体
+    都在机构网络内可达"，本仓库默认走本地路径，不依赖外网。
+  -->
+  <script src="/static/plotly.min.js" defer></script>
+  <script src="/static/panel.js" defer></script>
+</head>
+<body>
+  <!-- 顶部导航：产品名 + 病种 / 季度 / outcome 选择器 + 角色徽章 -->
+  <header class="app-header" role="banner">
+    <div class="app-header__brand">
+      <span class="app-header__brand-mark" aria-hidden="true"></span>
+      <h1 class="app-header__title">单病种指标因果归因系统</h1>
+    </div>
+
+    <form class="app-header__form" id="modeling-form" autocomplete="off">
+      <label class="field">
+        <span class="field__label">病种</span>
+        <select name="disease_code" id="select-disease" class="field__select">
+          <option value="I21">I21 急性心肌梗死</option>
+          <option value="I63">I63 脑梗死</option>
+          <option value="Z96.10">Z96.10 髋关节置换</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="field__label">季度</span>
+        <select name="quarter" id="select-quarter" class="field__select">
+          <option value="2025-Q1">2025 Q1</option>
+          <option value="2025-Q2">2025 Q2</option>
+          <option value="2025-Q3">2025 Q3</option>
+          <option value="2025-Q4">2025 Q4</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="field__label">结局指标</span>
+        <select name="outcome" id="select-outcome" class="field__select">
+          <option value="cmi">CMI</option>
+          <option value="los_days">住院日</option>
+          <option value="readmit_flag">再入院率</option>
+          <option value="complication_flag">并发症率</option>
+        </select>
+      </label>
+
+      <button type="submit" id="btn-build" class="btn btn--primary">建模</button>
+      <button type="button" id="btn-abort" class="btn btn--secondary" disabled>中止</button>
+    </form>
+
+    <div class="app-header__role" id="role-badge" data-role="quality_officer">
+      <span class="role-dot" aria-hidden="true"></span>
+      <span class="role-text">质控员</span>
+    </div>
+  </header>
+
+  <!-- 主体两栏：左侧因果图 + 右侧反事实面板 -->
+  <main class="app-main">
+    <!-- 因果图区域 -->
+    <section class="panel panel--graph" aria-labelledby="graph-heading">
+      <header class="panel__header">
+        <h2 id="graph-heading" class="panel__title">因果图</h2>
+        <div class="panel__legend" role="list" aria-label="节点颜色图例">
+          <span class="legend-item" role="listitem"><i class="legend-swatch legend-swatch--strong"></i>强效应</span>
+          <span class="legend-item" role="listitem"><i class="legend-swatch legend-swatch--weak"></i>弱效应</span>
+          <span class="legend-item" role="listitem"><i class="legend-swatch legend-swatch--none"></i>未达显著</span>
+        </div>
+      </header>
+
+      <div id="causal-graph" class="graph-area" data-state="empty">
+        <!-- 三态：empty / loading / error / ready -->
+        <div class="state state--empty" data-for-state="empty">
+          <svg viewBox="0 0 64 64" class="state__icon" aria-hidden="true">
+            <circle cx="32" cy="20" r="6" fill="currentColor" opacity="0.4" />
+            <circle cx="16" cy="44" r="6" fill="currentColor" opacity="0.4" />
+            <circle cx="48" cy="44" r="6" fill="currentColor" opacity="0.4" />
+            <path d="M32 26 L16 38 M32 26 L48 38" stroke="currentColor" stroke-width="2" fill="none" opacity="0.4" />
+          </svg>
+          <p class="state__hint">请选择病种 / 季度 / 结局指标后点建模</p>
+        </div>
+
+        <div class="state state--loading" data-for-state="loading" hidden>
+          <div class="spinner" aria-hidden="true"></div>
+          <p class="state__hint">建模中：<span id="progress-text">准备建模</span></p>
+        </div>
+
+        <div class="state state--error" data-for-state="error" hidden>
+          <svg viewBox="0 0 64 64" class="state__icon" aria-hidden="true">
+            <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width="3" />
+            <path d="M32 18 L32 34 M32 42 L32 46" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+          </svg>
+          <p class="state__hint" id="error-text">建模失败，请重试</p>
+          <button type="button" id="btn-retry" class="btn btn--secondary">重试</button>
+        </div>
+      </div>
+
+      <footer class="panel__footer" id="graph-footer">
+        <span class="footer-key">样本量</span><span class="footer-val" id="footer-sample-size">—</span>
+        <span class="footer-sep">·</span>
+        <span class="footer-key">守门</span><span class="footer-val" id="footer-verdict">—</span>
+        <span class="footer-sep">·</span>
+        <span class="footer-key">反驳总判定</span><span class="footer-val" id="footer-refute">—</span>
+        <span class="footer-sep">·</span>
+        <span class="footer-key">楔子强度</span><span class="footer-val" id="footer-wedge">—</span>
+      </footer>
+    </section>
+
+    <!-- 反事实 + 评审草稿按钮 -->
+    <aside class="panel panel--actions" aria-labelledby="actions-heading">
+      <header class="panel__header">
+        <h2 id="actions-heading" class="panel__title">评审操作</h2>
+      </header>
+
+      <div class="actions-stack">
+        <button type="button" id="btn-counterfactual" class="btn btn--primary" disabled>
+          反事实模拟
+        </button>
+        <button type="button" id="btn-confirm" class="btn btn--success" disabled>
+          评审确认
+        </button>
+        <button type="button" id="btn-reject" class="btn btn--danger" disabled>
+          评审退回
+        </button>
+      </div>
+
+      <div class="actions-summary">
+        <p class="summary-title">最近结果</p>
+        <ul class="summary-list" id="summary-list">
+          <li class="summary-empty">建模尚未开始</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Toast 通知容器（替代浏览器原生 alert） -->
+  <div id="toast-root" class="toast-root" role="status" aria-live="polite"></div>
+
+  <!-- 反事实浮层：选节点 + 假设值 -->
+  <div class="modal-root" id="cf-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cf-title">
+    <div class="modal-card">
+      <header class="modal-card__header">
+        <h3 id="cf-title" class="modal-card__title">反事实模拟</h3>
+        <button type="button" id="cf-close" class="btn btn--ghost" aria-label="关闭">×</button>
+      </header>
+      <div class="modal-card__body">
+        <label class="field">
+          <span class="field__label">干预节点</span>
+          <select id="cf-node" class="field__select"></select>
+        </label>
+        <label class="field">
+          <span class="field__label">假设值</span>
+          <input id="cf-value" type="text" class="field__input" placeholder="例如 PCI / 2 / 0" />
+        </label>
+        <div class="cf-result" id="cf-result" hidden>
+          <p class="cf-result__row">
+            <span class="cf-result__key">预测结局</span>
+            <span class="cf-result__val" id="cf-predicted">—</span>
+          </p>
+          <p class="cf-result__row">
+            <span class="cf-result__key">置信</span>
+            <span class="cf-result__val" id="cf-confidence">—</span>
+          </p>
+        </div>
+        <p class="cf-error" id="cf-error" hidden></p>
+      </div>
+      <footer class="modal-card__footer">
+        <button type="button" id="cf-run" class="btn btn--primary">运行</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- JSON-LD：产品元数据便于外部抓取（与面板可见内容无关） -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "单病种指标因果归因系统",
+    "description": "月度单病种评审辅助面板：四步因果流水线 + 反事实模拟 + 评审草稿流转",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Cross-platform"
+  }
+  </script>
+</body>
+</html>

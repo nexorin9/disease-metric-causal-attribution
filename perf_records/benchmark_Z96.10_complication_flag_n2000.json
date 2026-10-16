@@ -1,0 +1,128 @@
+{
+  "schema_version": "perf_benchmark/1.0",
+  "ts_utc": "2026-10-16T13:34:35.900669+00:00",
+  "disease_code": "Z96.10",
+  "outcome": "complication_flag",
+  "sample_size": 2000,
+  "overall_success": true,
+  "total_elapsed_ms": 392.45062496047467,
+  "refute_verdict": "partial",
+  "stages": [
+    {
+      "name": "data_prep",
+      "elapsed_ms": 5.4452919866889715,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "rows": 2000,
+        "columns": 12
+      }
+    },
+    {
+      "name": "identify_effect",
+      "elapsed_ms": 21.909000002779067,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "estimand_type": "NONPARAMETRIC_ATE",
+        "backdoor_count": 3
+      }
+    },
+    {
+      "name": "estimate_effect",
+      "elapsed_ms": 4.798291949555278,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "method": "backdoor.linear_regression",
+        "ate": 0.00729220029216715,
+        "ci_lower": -0.016133607521684096,
+        "ci_upper": 0.030718008106018397,
+        "ci_unstable": false
+      }
+    },
+    {
+      "name": "refute",
+      "elapsed_ms": 354.85591599717736,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "verdict": "partial",
+        "n_methods": 4,
+        "n_passed": 0,
+        "n_unstable": 0,
+        "n_degraded": 0
+      }
+    },
+    {
+      "name": "counterfactual",
+      "elapsed_ms": 5.4272920824587345,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "scenario_count": 5,
+        "n_timeout": 0,
+        "n_exception": 0
+      }
+    }
+  ],
+  "counterfactual": {
+    "scenarios": [
+      {
+        "scenario_id": "scn_f88b1ccc46c61d16",
+        "intervention_node": "treatment:total_hip_replacement",
+        "predicted_outcome": 0.13950716308084907,
+        "confidence": 0.02851489466300461,
+        "timeout": false,
+        "elapsed_ms": 4
+      },
+      {
+        "scenario_id": "scn_5542d3d238f51a09",
+        "intervention_node": "age_band:3",
+        "predicted_outcome": 0.1405037060867548,
+        "confidence": 0.02804010368128862,
+        "timeout": false,
+        "elapsed_ms": 4
+      },
+      {
+        "scenario_id": "scn_0674b5590454bc43",
+        "intervention_node": "admission_route:1",
+        "predicted_outcome": 0.1367196895317791,
+        "confidence": 0.02804010368128862,
+        "timeout": false,
+        "elapsed_ms": 3
+      },
+      {
+        "scenario_id": "scn_605281d46ff3e579",
+        "intervention_node": "complication_count:0",
+        "predicted_outcome": 0.010771403778149308,
+        "confidence": 0.02804010368128862,
+        "timeout": false,
+        "elapsed_ms": 4
+      },
+      {
+        "scenario_id": "scn_29faf1cae8ad1add",
+        "intervention_node": "treatment:conservative",
+        "predicted_outcome": 0.13950716308084907,
+        "confidence": 0.02851489466300461,
+        "timeout": false,
+        "elapsed_ms": 4
+      }
+    ],
+    "elapsed_ms": 5.4272920824587345,
+    "success": true
+  },
+  "notes": [
+    "n=2000 > fixture 基线 200，bootstrap-resample 扩样"
+  ]
+}

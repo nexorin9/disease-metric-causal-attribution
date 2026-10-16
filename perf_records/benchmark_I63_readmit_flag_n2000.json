@@ -1,0 +1,128 @@
+{
+  "schema_version": "perf_benchmark/1.0",
+  "ts_utc": "2026-10-16T13:34:28.408574+00:00",
+  "disease_code": "I63",
+  "outcome": "readmit_flag",
+  "sample_size": 2000,
+  "overall_success": true,
+  "total_elapsed_ms": 380.80970803275704,
+  "refute_verdict": "partial",
+  "stages": [
+    {
+      "name": "data_prep",
+      "elapsed_ms": 5.299291922710836,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "rows": 2000,
+        "columns": 12
+      }
+    },
+    {
+      "name": "identify_effect",
+      "elapsed_ms": 20.492208073846996,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "estimand_type": "NONPARAMETRIC_ATE",
+        "backdoor_count": 3
+      }
+    },
+    {
+      "name": "estimate_effect",
+      "elapsed_ms": 5.2096250001341105,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "method": "backdoor.linear_regression",
+        "ate": 0.02284662124182943,
+        "ci_lower": 0.006600019313745726,
+        "ci_upper": 0.039093223169913136,
+        "ci_unstable": false
+      }
+    },
+    {
+      "name": "refute",
+      "elapsed_ms": 344.5899160578847,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "verdict": "partial",
+        "n_methods": 4,
+        "n_passed": 0,
+        "n_unstable": 0,
+        "n_degraded": 0
+      }
+    },
+    {
+      "name": "counterfactual",
+      "elapsed_ms": 5.204749992117286,
+      "success": true,
+      "degraded": false,
+      "degraded_reasons": [],
+      "error": null,
+      "extra": {
+        "scenario_count": 5,
+        "n_timeout": 0,
+        "n_exception": 0
+      }
+    }
+  ],
+  "counterfactual": {
+    "scenarios": [
+      {
+        "scenario_id": "scn_e27307a4370fd64b",
+        "intervention_node": "treatment:thrombolysis",
+        "predicted_outcome": 0.08627264089285233,
+        "confidence": 0.04017492015267943,
+        "timeout": false,
+        "elapsed_ms": 4
+      },
+      {
+        "scenario_id": "scn_4d6cacd2e9da07f4",
+        "intervention_node": "age_band:3",
+        "predicted_outcome": 0.09223362506354867,
+        "confidence": 0.036519980412891506,
+        "timeout": false,
+        "elapsed_ms": 4
+      },
+      {
+        "scenario_id": "scn_9b99ce2c020535f2",
+        "intervention_node": "admission_route:1",
+        "predicted_outcome": 0.09223362506354868,
+        "confidence": 0.036519980412891506,
+        "timeout": false,
+        "elapsed_ms": 4
+      },
+      {
+        "scenario_id": "scn_4339ab44481a1524",
+        "intervention_node": "complication_count:0",
+        "predicted_outcome": 0.011129655065753113,
+        "confidence": 0.03651998041289162,
+        "timeout": false,
+        "elapsed_ms": 4
+      },
+      {
+        "scenario_id": "scn_fbe1ccdaa257a50c",
+        "intervention_node": "treatment:conservative",
+        "predicted_outcome": 0.08627264089285233,
+        "confidence": 0.04017492015267943,
+        "timeout": false,
+        "elapsed_ms": 4
+      }
+    ],
+    "elapsed_ms": 5.204749992117286,
+    "success": true
+  },
+  "notes": [
+    "n=2000 > fixture 基线 200，bootstrap-resample 扩样"
+  ]
+}

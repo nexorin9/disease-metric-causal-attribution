@@ -1,0 +1,178 @@
+{
+  "$schema": "./field_mapping.schema.json",
+  "_comment": "字段映射配置（spec.md §3.1）。每个 disease_code 的字段映射独立可调；启动期由 app.adapters.field_mapping.FieldMappingRegistry 校验必填字段 + 加载 display_blocked_fields（spec §6 PII 白名单）。修改本文件须验证 tests/test_field_mapping.py 全部通过。",
+  "default": {
+    "_comment": "默认字段映射（适用于未单独指定 disease_code 的情形；spec §3.1）",
+    "fields": {
+      "encounter_id": {
+        "column": "encounter_id",
+        "type": "string",
+        "max_length": 36,
+        "required": true,
+        "semantic": "病案号 · 与单病种上报系统对齐的唯一主键",
+        "display_redaction": "enc_<12hex>",
+        "spec_section": "§3.1 必填"
+      },
+      "primary_diagnosis_code": {
+        "column": "primary_diagnosis_code",
+        "type": "string",
+        "max_length": 6,
+        "required": true,
+        "semantic": "主要诊断 ICD-10 编码",
+        "ref": "domain/dictionaries/医保编码规则_ICD与药品.md",
+        "spec_section": "§3.1 必填"
+      },
+      "secondary_diagnosis_list": {
+        "column": "secondary_diagnosis_list",
+        "type": "string[]",
+        "max_length": 2048,
+        "required": false,
+        "semantic": "其他诊断列表（合并症来源；以 JSON 数组字符串形式落入）",
+        "spec_section": "§3.1 可选"
+      },
+      "treatment_strategy": {
+        "column": "treatment_strategy",
+        "type": "string",
+        "max_length": 128,
+        "required": true,
+        "semantic": "治疗方式 / 主要操作（DAG 节点候选：PCI / 溶栓 / 保守 等）",
+        "spec_section": "§3.1 必填"
+      },
+      "age_band": {
+        "column": "age_band",
+        "type": "int",
+        "required": true,
+        "semantic": "年龄段（按区间离散；DAG 节点候选）",
+        "spec_section": "§3.1 必填"
+      },
+      "admission_route": {
+        "column": "admission_route",
+        "type": "enum",
+        "values": ["1", "2", "3", "9"],
+        "required": true,
+        "semantic": "入院途径：1=急诊 / 2=门诊 / 3=其他机构转入 / 9=其他",
+        "ref": "domain/dictionaries/医保结算清单字段规范.md",
+        "spec_section": "§3.1 必填"
+      },
+      "los_days": {
+        "column": "los_days",
+        "type": "int",
+        "required": true,
+        "semantic": "实际住院天数（outcome 候选）",
+        "spec_section": "§3.1 必填"
+      },
+      "cmi": {
+        "column": "cmi",
+        "type": "decimal",
+        "required": false,
+        "semantic": "CMI（病例组合指数；outcome 候选）",
+        "spec_section": "§3.1 可选"
+      },
+      "readmit_flag": {
+        "column": "readmit_flag",
+        "type": "bool",
+        "required": false,
+        "semantic": "再入院标记（outcome 候选）",
+        "spec_section": "§3.1 可选"
+      },
+      "complication_flag": {
+        "column": "complication_flag",
+        "type": "bool",
+        "required": false,
+        "semantic": "并发症标记（outcome 候选）",
+        "spec_section": "§3.1 可选"
+      }
+    },
+    "display_blocked_fields": [
+      "patient_name",
+      "id_card",
+      "phone",
+      "address",
+      "email",
+      "guardian_name"
+    ],
+    "_display_blocked_purpose": "spec §6 PII 白名单——HIS 即使含此类字段也不进 ORM / DataFrame / 审计日志"
+  },
+  "by_disease_code": {
+    "I21": {
+      "_comment": "急性心梗（含合并症与治疗方式特有枚举）",
+      "fields": {
+        "primary_diagnosis_code": {
+          "column": "primary_diagnosis_code",
+          "type": "string",
+          "max_length": 6,
+          "required": true,
+          "value_prefix": "I21",
+          "semantic": "急性心梗 ICD-10 前缀 I21.x",
+          "spec_section": "§3.1 必填"
+        },
+        "treatment_strategy": {
+          "column": "treatment_strategy",
+          "type": "enum",
+          "values": ["PCI", "thrombolysis", "conservative"],
+          "required": true,
+          "semantic": "急性心梗治疗方式：PCI / 溶栓 / 保守",
+          "spec_section": "§3.1 必填"
+        }
+      },
+      "_inherit_from_default": true
+    },
+    "I63": {
+      "_comment": "脑梗",
+      "fields": {
+        "primary_diagnosis_code": {
+          "column": "primary_diagnosis_code",
+          "type": "string",
+          "max_length": 6,
+          "required": true,
+          "value_prefix": "I63",
+          "semantic": "脑梗 ICD-10 前缀 I63.x",
+          "spec_section": "§3.1 必填"
+        },
+        "treatment_strategy": {
+          "column": "treatment_strategy",
+          "type": "enum",
+          "values": ["thrombolysis", "thrombectomy", "conservative"],
+          "required": true,
+          "semantic": "脑梗治疗方式：溶栓 / 取栓 / 保守",
+          "spec_section": "§3.1 必填"
+        }
+      },
+      "_inherit_from_default": true
+    },
+    "Z96.10": {
+      "_comment": "髋关节置换术后（含髋关节假体 ICD-10 别名）",
+      "fields": {
+        "primary_diagnosis_code": {
+          "column": "primary_diagnosis_code",
+          "type": "string",
+          "max_length": 6,
+          "required": true,
+          "value_prefix": "Z96.10",
+          "semantic": "髋关节置换状态 ICD-10 前缀 Z96.10（实际诊断常为 M16 等）",
+          "spec_section": "§3.1 必填"
+        },
+        "treatment_strategy": {
+          "column": "treatment_strategy",
+          "type": "enum",
+          "values": ["total_hip_replacement", "revision", "conservative"],
+          "required": true,
+          "semantic": "髋关节置换治疗方式：初次置换 / 翻修 / 保守",
+          "spec_section": "§3.1 必填"
+        }
+      },
+      "_inherit_from_default": true
+    }
+  },
+  "_required_field_summary": {
+    "_comment": "spec §3.1 必填字段清单（启动期由 FieldMappingRegistry 校验必填映射存在）",
+    "required_field_names": [
+      "encounter_id",
+      "primary_diagnosis_code",
+      "treatment_strategy",
+      "age_band",
+      "admission_route",
+      "los_days"
+    ]
+  }
+}

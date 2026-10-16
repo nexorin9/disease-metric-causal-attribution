@@ -1,0 +1,16 @@
+{
+  "schema_version": "sample_size_runtime/1.0",
+  "sample_size": 100,
+  "verdict": "sufficient",
+  "elapsed_ms": 0.0004169996827840805,
+  "elapsed_seconds": 4.169996827840805e-07,
+  "ts": "2026-10-16T17:59:57.389530+00:00",
+  "insufficient_threshold": 30,
+  "marginal_threshold": 100,
+  "result_type": "str",
+  "exception_type": null,
+  "exception_message": null,
+  "allows_draft_posting": true,
+  "allows_backend_write": true,
+  "fn_qualname": "TestRealPerfRecordsPath.test_real_perf_records_dir_is_written.<locals>.<lambda>"
+}

@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "disease-metric-causal-attribution"
+version = "0.1.0"
+description = "单病种指标因果归因系统 — 浏览器实时面板驱动的四步因果流水线 + 反事实模拟 + 评审草稿状态机"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "ChaosForge Round 004" }]
+
+# Core deps — pinned to versions known to coexist on Python 3.10+
+dependencies = [
+    # 因果推理核心 — 四步流水线 + 反事实 + 反驳 + 条件独立性 + SCM 自动生成
+    # 锁定 major.minor，留 patch 位回退
+    "dowhy>=0.10,<0.11",
+    "networkx>=3.1",
+    "pandas>=2.0,<3.0",
+    "numpy>=1.24,<3.0",
+    "scipy>=1.10",
+
+    # HIS 出院病案首页库直连 — 双 driver
+    "sqlalchemy>=2.0,<3.0",
+    "psycopg2-binary>=2.9",
+    "PyMySQL>=1.1",
+
+    # 单病种上报 HTTP POST + ModelGateway OpenAI-compatible 客户端
+    "requests>=2.31",
+    "httpx>=0.27",
+
+    # FastAPI + SSE 实时面板
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+
+    # 浏览器面板模板
+    "jinja2>=3.1",
+
+    # 数据导出（草稿 JSON / Excel / PDF — Phase 4 后续 task 用）
+    "openpyxl>=3.1",
+    "weasyprint>=60",
+
+    # 配置 / 数据 schema
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-mock>=3.12",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["tests*", "benchmarks*", "data*", "docs*", "logs*", "perf_records*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "benchmarks"]
+addopts = "-q"
+asyncio_mode = "auto"
+# 尊重测试分层纪律：收窄跑只覆盖受影响模块；全量跑仅在共享底座改动或本轮最后一个任务时触发
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

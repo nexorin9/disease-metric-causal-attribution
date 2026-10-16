@@ -1,0 +1,52 @@
+# Secrets & runtime config
+.env
+.env.local
+*.pem
+
+# Virtualenvs
+venv/
+.venv/
+env/
+
+# Build / cache / runtime
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+dist/
+build/
+.next/
+.nuxt/
+target/
+
+# Logs / temp
+logs/
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Data outputs (project keeps CSV fixtures via allowlist below)
+data/
+!data/fixture_*.csv
+
+# Round metadata
+score.json
+progress.txt
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+
+# qrcode.jpg is a tracked marketing asset — DO NOT ignore
